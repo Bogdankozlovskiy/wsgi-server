@@ -1,42 +1,74 @@
 from jinja2 import Template
-from short_cuts import parse_body, parse_cookies
-from datetime import datetime
+from short_cuts import parse_body, parse_cookies, parse_query_string
+from models import connection
 
 
-COUNT = 1
-db = {}
-chat_message = []
+def main(request_method, http_cookie, body, http_host, url_scheme, query_string):
+    with open("./templates/main") as file:
+        template = Template(file.read())
+    return "200 OK", [], template.render().encode()
 
 
-def chat(request_method, http_cookie, body):
+def chat(request_method, http_cookie, body, http_host, url_scheme, query_string):
     body = parse_body(body)
     cookies = parse_cookies(http_cookie)
-    user_id = int(cookies.get("user_id"))
-    user_name = db.get(user_id)
+    user_id = int(cookies.get("user_id", "0"))
+    cursor = connection.cursor()
+    cursor.execute("SELECT login FROM user WHERE id=?", (user_id, ))
+    user_name = cursor.fetchone()
+    if user_name:
+        user_name, = user_name
     if user_name is None:
-        return "307 Temporary Redirect", [("Location", f"http://localhost:8000/register"), ("Set-Cookie", "location=chat")], b""
+        return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/register"), ("Set-Cookie", "location=chat")], b""
     with open("templates/chat") as file:
         template = Template(file.read())
     if request_method == "POST" and (msg := body.get("msg")):
-        chat_message.append(
-            (user_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg)
-        )
-    return "200 OK", [], template.render(chat=chat_message).encode()
+        connection.execute("""
+            INSERT INTO chat (message, publish_date, user_id)
+            VALUES (?, datetime('now'), ?)
+        """, (msg, user_id))
+        connection.commit()
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT user.login, strftime('%Y-%m-%d %H:%M:%S', chat.publish_date), chat.message, chat.id
+        FROM chat 
+        JOIN user 
+        ON user.id=chat.user_id
+        ORDER BY chat.publish_date desc
+        LIMIT 10
+    """)
+    return "200 OK", [], template.render(chat=cursor.fetchall()).encode()
 
 
-def view_register(request_method, http_cookie, body):
+def view_register(request_method, http_cookie, body, http_host, url_scheme, query_string):
+    breakpoint()
     if request_method == "GET":
         with open("./templates/register") as file:
             template = Template(file.read())
         return "200 OK", [], template.render().encode()
     body = parse_body(body)
-    global COUNT
-    db[COUNT] = body['name']
+    try:
+        connection.execute("INSERT INTO user (login) values (?)", (body['name'], ))
+        connection.commit()
+    except Exception:
+        return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/register")], b""
+    cursor = connection.cursor()
+    cursor.execute("SELECT id FROM user WHERE login=?", (body['name'], ))
+    user_id, = cursor.fetchone()
     cookie = parse_cookies(http_cookie)
     if location := cookie.get("location"):
-        response = "307 Temporary Redirect", [("Location", f"http://localhost:8000/{location}")], b""
+        response = "307 Temporary Redirect", [("Set-Cookie", f"user_id={user_id}"), ("Location", f"{url_scheme}://{http_host}/{location}")], b""
     else:
-        response = "200 OK", [("Set-Cookie", f"user_id={COUNT}")], b"register was success"
-    COUNT += 1
+        response = "200 OK", [("Set-Cookie", f"user_id={user_id}")], b"register was success"
     return response
 
+
+def remove_message(request_method, http_cookie, body, http_host, url_scheme, query_string, message_id=None):
+    query_string = parse_query_string(query_string)
+    if message_id is None:
+        message_id = query_string.get("message_id")
+    cookie = parse_cookies(http_cookie)
+    user_id = int(cookie.get("user_id", "0"))
+    connection.execute("DELETE FROM chat WHERE user_id=? AND id=?", (user_id, message_id))
+    connection.commit()
+    return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""

@@ -5,6 +5,8 @@ My favorite Chat
         <h2>name: {{ message[0] }}</h2>
         <h3>time: {{ message[1] }}</h3>
         <h3>text: {{ message[2] }}</h3>
+        <a href="/delete_message/{{ message[3] }}">delete id in url</a><br>
+        <a href="/delete_message?message_id={{message[3]}}">delete id in query parameters</a>
         <hr>
         <br>
     {% endfor %}

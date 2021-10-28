@@ -17,3 +17,13 @@ def parse_cookies(http_cookie):
         value = "=".join(value)
         data[key] = value
     return data
+
+
+def parse_query_string(query_string):
+    result = {}
+    if not query_string:
+        return result
+    for pair in query_string.split("&"):
+        key, value = pair.split("=")
+        result[key] = value
+    return result
