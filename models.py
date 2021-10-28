@@ -1,6 +1,6 @@
 import sqlite3
 
-connection = sqlite3.connect("my_db.db")
+connection = sqlite3.connect("my_db.db", check_same_thread=False)
 
 
 connection.execute("""

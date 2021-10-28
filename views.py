@@ -41,7 +41,6 @@ def chat(request_method, http_cookie, body, http_host, url_scheme, query_string)
 
 
 def view_register(request_method, http_cookie, body, http_host, url_scheme, query_string):
-    breakpoint()
     if request_method == "GET":
         with open("./templates/register") as file:
             template = Template(file.read())
