@@ -30,9 +30,9 @@ try:
     """)
 
     connection.execute("""
-            CREATE INDEX IF NOT EXISTS idx_user_id
-            ON chat(user_id)
-        """)
+        CREATE INDEX IF NOT EXISTS idx_user_id
+        ON chat(user_id)
+    """)
 
     connection.execute("""
         CREATE VIEW IF NOT EXISTS chat_data AS
