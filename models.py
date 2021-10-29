@@ -44,7 +44,7 @@ try:
     """)
 
     connection.execute("""
-        CREATE TRIGGER log_contact_after_update
+        CREATE TRIGGER IF NOT EXISTS increase_count_of_message_after_insert
            AFTER INSERT ON chat
         BEGIN
             UPDATE user
@@ -56,6 +56,20 @@ try:
             WHERE user.id=NEW.user_id;
         END;
     """)
+
+    connection.execute("""
+            CREATE TRIGGER IF NOT EXISTS increase_count_of_message_after_delete
+               AFTER DELETE ON chat
+            BEGIN
+                UPDATE user
+                SET count_of_message=(
+                    SELECT COUNT(*)
+                    FROM chat
+                    WHERE chat.user_id=OLD.user_id
+                )
+                WHERE user.id=OLD.user_id;
+            END;
+        """)
 except Exception:
     connection.rollback()
     raise
