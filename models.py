@@ -46,7 +46,7 @@ try:
             SET count_of_message=(
                 SELECT COUNT(*)
                 FROM chat
-                WHERE chat.user_id=NEW.id
+                WHERE chat.user_id=NEW.user_id
             );
         END;
     """)
