@@ -25,9 +25,14 @@ try:
     """)
 
     connection.execute("""
-        CREATE INDEX IF NOT EXISTS idx_user_id
+        CREATE INDEX IF NOT EXISTS idx_id_user_id
         ON chat(id, user_id)
     """)
+
+    connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_id
+            ON chat(user_id)
+        """)
 
     connection.execute("""
         CREATE VIEW IF NOT EXISTS chat_data AS
@@ -47,7 +52,8 @@ try:
                 SELECT COUNT(*)
                 FROM chat
                 WHERE chat.user_id=NEW.user_id
-            );
+            )
+            WHERE user.id=NEW.user_id;
         END;
     """)
 except Exception:
