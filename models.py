@@ -18,6 +18,7 @@ try:
             message text NOT NULL,
             publish_date date NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
             user_id INTEGER NOT NULL,
+            count_of_likes INTEGER DEFAULT 0,
             
             FOREIGN KEY(user_id) REFERENCES user(id),
             CONSTRAINT NE_message CHECK ( message <> 'fuck')
@@ -93,6 +94,16 @@ try:
                 WHERE user.id=OLD.user_id;
             END;
         """)
+
+    connection.execute("""
+        CREATE TRIGGER IF NOT EXISTS increase_count_of_likes
+            AFTER INSERT ON chat_user
+        BEGIN
+            UPDATE chat
+            SET count_of_likes=chat.count_of_likes + 1
+            WHERE chat.id=NEW.chat_id;
+        END;
+    """)
 except Exception:
     connection.rollback()
     raise
