@@ -82,7 +82,7 @@ try:
     """)
 
     connection.execute("""
-            CREATE TRIGGER IF NOT EXISTS increase_count_of_message_after_delete
+            CREATE TRIGGER IF NOT EXISTS decrease_count_of_message_after_delete
                AFTER DELETE ON chat
             BEGIN
                 UPDATE user
@@ -102,6 +102,16 @@ try:
             UPDATE chat
             SET count_of_likes=chat.count_of_likes + 1
             WHERE chat.id=NEW.chat_id;
+        END;
+    """)
+
+    connection.execute("""
+        CREATE TRIGGER IF NOT EXISTS decrease_count_of_likes
+            AFTER DELETE ON chat_user
+        BEGIN
+            UPDATE chat
+            SET count_of_likes=chat.count_of_likes - 1
+            WHERE chat.id=OLD.chat_id;
         END;
     """)
 except Exception:

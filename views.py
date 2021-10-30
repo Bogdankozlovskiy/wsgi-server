@@ -78,7 +78,9 @@ def add_like(request_method, http_cookie, body, http_host, url_scheme, query_str
             VALUES (?, ?)
         """, (message_id, user_id))
     except IntegrityError as e:
-        connection.rollback()
-    else:
-        connection.commit()
+        connection.execute("""
+            DELETE FROM chat_user
+            WHERE chat_id=? AND user_id=?
+        """, (message_id, user_id))
+    connection.commit()
     return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
