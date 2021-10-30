@@ -23,19 +23,25 @@ def chat(request_method, http_cookie, body, http_host, url_scheme, query_string)
         return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/register"), ("Set-Cookie", "location=chat")], b""
     with open("templates/chat") as file:
         template = Template(file.read())
+    error_message = None
     if request_method == "POST" and (msg := body.get("msg")):
-        connection.execute("""
-            INSERT INTO chat (message, user_id)
-            VALUES (?, ?)
-        """, (msg, user_id))
-        connection.commit()
+        try:
+            connection.execute("""
+                INSERT INTO chat (message, user_id)
+                VALUES (?, ?)
+            """, (msg, user_id))
+        except IntegrityError as e:
+            error_message = "message is not correct"
+            connection.rollback()
+        else:
+            connection.commit()
     cursor = connection.cursor()
     cursor.execute("""
         SELECT * 
         FROM chat_data
         LIMIT 10
     """)
-    return "200 OK", [], template.render(chat=cursor.fetchall()).encode()
+    return "200 OK", [], template.render(chat=cursor.fetchall(), error_message=error_message).encode()
 
 
 def view_register(request_method, http_cookie, body, http_host, url_scheme, query_string):

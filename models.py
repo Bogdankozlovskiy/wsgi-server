@@ -21,7 +21,8 @@ try:
             count_of_likes INTEGER DEFAULT 0,
             
             FOREIGN KEY(user_id) REFERENCES user(id),
-            CONSTRAINT NE_message CHECK ( message <> 'fuck')
+            CONSTRAINT NE_message CHECK ( message not in ('fuck', 'dick')),
+            CONSTRAINT GT_message CHECK ( LENGTH(message) >= 3 )
         )
     """)
 
