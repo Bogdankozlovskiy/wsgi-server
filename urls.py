@@ -1,5 +1,5 @@
 import re
-from views import view_register, chat, remove_message, main
+from views import view_register, chat, remove_message, main, add_like
 
 
 urlpatterns = [
@@ -7,6 +7,7 @@ urlpatterns = [
     (r"^/register$", view_register),
     (r"^/chat$", chat),
     (r"^/delete_message/(?P<message_id>\d+)$", remove_message),
+    (r"^/add_like/(?P<message_id>\d+)$", add_like),
     (r"^/delete_message$", remove_message),
 ]
 

@@ -25,6 +25,19 @@ try:
     """)
 
     connection.execute("""
+        CREATE TABLE IF NOT EXISTS chat_user(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chat_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            
+            FOREIGN KEY (chat_id) REFERENCES chat(id),
+            FOREIGN KEY (user_id) REFERENCES user(id),
+            
+            CONSTRAINT UC_chat_user UNIQUE (chat_id, user_id)
+        )
+    """)
+
+    connection.execute("""
         CREATE INDEX IF NOT EXISTS idx_id_user_id
         ON chat(id, user_id)
     """)
@@ -36,11 +49,17 @@ try:
 
     connection.execute("""
         CREATE VIEW IF NOT EXISTS chat_data AS
-        SELECT user.login, chat.publish_date, chat.message, chat.id
-        FROM chat 
+        SELECT user.login, chat.publish_date, chat.message, chat.id, likes_table.likes
+        FROM chat
         JOIN user
         ON user.id=chat.user_id
-        ORDER BY chat.publish_date desc
+        LEFT JOIN (
+            SELECT chat_id, COUNT(*) AS likes 
+            FROM chat_user 
+            GROUP BY chat_id
+            ) likes_table
+        ON likes_table.chat_id=chat.id
+        ORDER BY chat.publish_date DESC
     """)
 
     connection.execute("""

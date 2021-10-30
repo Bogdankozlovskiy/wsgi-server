@@ -1,6 +1,7 @@
 from jinja2 import Template
 from short_cuts import parse_body, parse_cookies, parse_query_string
 from models import connection
+from sqlite3 import IntegrityError
 
 
 def main(request_method, http_cookie, body, http_host, url_scheme, query_string):
@@ -65,4 +66,20 @@ def remove_message(request_method, http_cookie, body, http_host, url_scheme, que
     user_id = int(cookie.get("user_id", "0"))
     connection.execute("DELETE FROM chat WHERE user_id=? AND id=?", (user_id, message_id))
     connection.commit()
+    return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
+
+
+def add_like(request_method, http_cookie, body, http_host, url_scheme, query_string, message_id=None):
+    cookie = parse_cookies(http_cookie)
+    user_id = int(cookie.get("user_id", "0"))
+    try:
+        connection.execute("""
+            INSERT INTO chat_user(chat_id, user_id)
+            VALUES (?, ?)
+        """, (message_id, user_id))
+    except IntegrityError as e:
+        connection.rollback()
+        print(e)
+    else:
+        connection.commit()
     return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
