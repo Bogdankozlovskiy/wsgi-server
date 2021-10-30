@@ -49,7 +49,11 @@ try:
 
     connection.execute("""
         CREATE VIEW IF NOT EXISTS chat_data AS
-        SELECT user.login, chat.publish_date, chat.message, chat.id, likes_table.likes
+        SELECT user.login, chat.publish_date, chat.message, chat.id,
+            CASE 
+                WHEN likes_table.likes IS NULL THEN 0 
+                ELSE likes_table.likes 
+            END AS likes
         FROM chat
         JOIN user
         ON user.id=chat.user_id
