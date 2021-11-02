@@ -33,23 +33,21 @@ def chat(request_method, http_cookie, body, http_host, url_scheme, query_string)
             pass
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT user.login, chat.publish_date, chat.message, chat.id, COALESCE(likes_table.likes, 0)
-        --CASE 
-        --    WHEN likes_table.likes IS NULL THEN 0
-        --    ELSE likes_table.likes
-        --END as likes
-        FROM chat
-        JOIN user
-        ON user.id=chat.user_id
-        LEFT JOIN (
-            SELECT chat_id, COUNT(*) as likes
-            FROM chat_to_user_like
-            GROUP BY chat_id
-            ) likes_table
-        ON chat.id=likes_table.chat_id
-        ORDER BY chat.publish_date desc
+        SELECT * 
+        FROM chat_data
         LIMIT 10
     """)
+    # cursor.execute("""
+    #         SELECT user.login, chat.publish_date, chat.message, chat.id, count(chat_to_user_like.chat_id) as likes
+    #         FROM chat
+    #         JOIN user
+    #         ON user.id=chat.user_id
+    #         LEFT JOIN chat_to_user_like
+    #         ON chat.id=chat_to_user_like.chat_id
+    #         GROUP BY user.login, chat.publish_date, chat.message, chat.id
+    #         ORDER BY chat.publish_date desc
+    #         LIMIT 10
+    #     """)
     return "200 OK", [], template.render(chat=cursor.fetchall()).encode()
 
 

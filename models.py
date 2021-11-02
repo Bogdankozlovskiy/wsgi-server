@@ -39,5 +39,30 @@ connection.execute("""
 
 connection.execute("""
     CREATE INDEX IF NOT EXISTS user_id_and_id_index
+    ON chat_to_user_like(user_id, chat_id)
+""")
+
+connection.execute("""
+    CREATE INDEX IF NOT EXISTS user_id_and_id_index
     ON chat(user_id, id)
+""")
+
+
+connection.execute("""
+    CREATE VIEW IF NOT EXISTS chat_data as
+    SELECT user.login, chat.publish_date, chat.message, chat.id, COALESCE(likes_table.likes, 0)
+    --CASE 
+    --    WHEN likes_table.likes IS NULL THEN 0
+    --    ELSE likes_table.likes
+    --END as likes
+    FROM chat
+    JOIN user
+    ON user.id=chat.user_id
+    LEFT JOIN (
+        SELECT chat_id, COUNT(*) as likes
+        FROM chat_to_user_like
+        GROUP BY chat_id
+        ) likes_table
+    ON chat.id=likes_table.chat_id
+    ORDER BY chat.publish_date desc
 """)
