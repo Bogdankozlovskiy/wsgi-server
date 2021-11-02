@@ -23,14 +23,17 @@ def chat(request_method, http_cookie, body, http_host, url_scheme, query_string)
     with open("templates/chat") as file:
         template = Template(file.read())
     if request_method == "POST" and (msg := body.get("msg")):
-        connection.execute("""
-            INSERT INTO chat (message, publish_date, user_id)
-            VALUES (?, datetime('now'), ?)
-        """, (msg, user_id))
-        connection.commit()
+        try:
+            connection.execute("""
+                INSERT INTO chat (message, user_id)
+                VALUES (?, ?)
+            """, (msg, user_id))
+            connection.commit()
+        except:
+            pass
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT user.login, strftime('%Y-%m-%d %H:%M:%S', chat.publish_date), chat.message, chat.id
+        SELECT user.login, chat.publish_date, chat.message, chat.id
         FROM chat 
         JOIN user 
         ON user.id=chat.user_id
@@ -47,13 +50,11 @@ def view_register(request_method, http_cookie, body, http_host, url_scheme, quer
         return "200 OK", [], template.render().encode()
     body = parse_body(body)
     try:
-        connection.execute("INSERT INTO user (login) values (?)", (body['name'], ))
+        cursor = connection.execute("INSERT INTO user (login) values (?)", (body['name'], ))
         connection.commit()
     except Exception:
         return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/register")], b""
-    cursor = connection.cursor()
-    cursor.execute("SELECT id FROM user WHERE login=?", (body['name'], ))
-    user_id, = cursor.fetchone()
+    user_id = cursor.lastrowid
     cookie = parse_cookies(http_cookie)
     if location := cookie.get("location"):
         response = "307 Temporary Redirect", [("Set-Cookie", f"user_id={user_id}"), ("Location", f"{url_scheme}://{http_host}/{location}")], b""
