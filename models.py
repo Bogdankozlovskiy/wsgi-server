@@ -19,6 +19,7 @@ connection.execute("""
         message text NOT NULL,
         publish_date date NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
         user_id INTEGER NOT NULL,
+        count_of_likes INTEGER DEFAULT 0,
         
         FOREIGN KEY(user_id) REFERENCES user(id),
         CONSTRAINT fuck_checker CHECK ( message not like '%fuck%'),
@@ -38,6 +39,26 @@ connection.execute("""
 """)
 
 connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS increase_count_of_like
+    AFTER INSERT ON chat_to_user_like
+    BEGIN
+        UPDATE chat 
+        SET count_of_likes=chat.count_of_likes + 1
+        WHERE chat.id=NEW.chat_id;
+    END;
+""")
+
+connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS decrease_count_of_like
+    AFTER DELETE ON chat_to_user_like
+    BEGIN
+        UPDATE chat 
+        SET count_of_likes=chat.count_of_likes - 1
+        WHERE chat.id=OLD.chat_id;
+    END;
+""")
+
+connection.execute("""
     CREATE INDEX IF NOT EXISTS user_id_and_id_index
     ON chat_to_user_like(user_id, chat_id)
 """)
@@ -50,19 +71,9 @@ connection.execute("""
 
 connection.execute("""
     CREATE VIEW IF NOT EXISTS chat_data as
-    SELECT user.login, chat.publish_date, chat.message, chat.id, COALESCE(likes_table.likes, 0)
-    --CASE 
-    --    WHEN likes_table.likes IS NULL THEN 0
-    --    ELSE likes_table.likes
-    --END as likes
+    SELECT user.login, chat.publish_date, chat.message, chat.id, chat.count_of_likes
     FROM chat
     JOIN user
     ON user.id=chat.user_id
-    LEFT JOIN (
-        SELECT chat_id, COUNT(*) as likes
-        FROM chat_to_user_like
-        GROUP BY chat_id
-        ) likes_table
-    ON chat.id=likes_table.chat_id
     ORDER BY chat.publish_date desc
 """)
