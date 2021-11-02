@@ -28,6 +28,16 @@ connection.execute("""
 
 
 connection.execute("""
+    CREATE TABLE IF NOT EXISTS chat_to_user_like(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        chat_id INTEGER NOT NULL,
+        
+        CONSTRAINT user_chat_unique UNIQUE (user_id, chat_id)
+    )
+""")
+
+connection.execute("""
     CREATE INDEX IF NOT EXISTS user_id_and_id_index
     ON chat(user_id, id)
 """)

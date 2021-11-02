@@ -33,10 +33,20 @@ def chat(request_method, http_cookie, body, http_host, url_scheme, query_string)
             pass
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT user.login, chat.publish_date, chat.message, chat.id
-        FROM chat 
-        JOIN user 
+        SELECT user.login, chat.publish_date, chat.message, chat.id, COALESCE(likes_table.likes, 0)
+        --CASE 
+        --    WHEN likes_table.likes IS NULL THEN 0
+        --    ELSE likes_table.likes
+        --END as likes
+        FROM chat
+        JOIN user
         ON user.id=chat.user_id
+        LEFT JOIN (
+            SELECT chat_id, COUNT(*) as likes
+            FROM chat_to_user_like
+            GROUP BY chat_id
+            ) likes_table
+        ON chat.id=likes_table.chat_id
         ORDER BY chat.publish_date desc
         LIMIT 10
     """)
@@ -70,5 +80,23 @@ def remove_message(request_method, http_cookie, body, http_host, url_scheme, que
     cookie = parse_cookies(http_cookie)
     user_id = int(cookie.get("user_id", "0"))
     connection.execute("DELETE FROM chat WHERE user_id=? AND id=?", (user_id, message_id))
+    connection.commit()
+    return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
+
+
+def add_likes(request_method, http_cookie, body, http_host, url_scheme, query_string, message_id=None):
+    cookie = parse_cookies(http_cookie)
+    user_id = int(cookie.get("user_id", "0"))
+    try:
+        connection.execute("""
+            INSERT INTO chat_to_user_like
+            (user_id, chat_id)
+            VALUES (?, ?)
+        """, (user_id, message_id))
+    except:
+        connection.execute("""
+            DELETE FROM chat_to_user_like
+            WHERE user_id=? AND chat_id=?
+        """, (user_id, message_id))
     connection.commit()
     return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
