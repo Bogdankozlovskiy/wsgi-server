@@ -17,7 +17,7 @@ connection.execute("""
     CREATE TABLE IF NOT EXISTS chat(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         message text NOT NULL,
-        publish_date date NOT NULL DEFAULT strftime('%Y-%m-%d %H:%M:%S', 'now'),
+        publish_date date NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
         user_id INTEGER NOT NULL,
         
         FOREIGN KEY(user_id) REFERENCES user(id),
