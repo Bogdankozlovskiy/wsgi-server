@@ -2,16 +2,15 @@ import sqlite3
 
 connection = sqlite3.connect("my_db.db", check_same_thread=False)
 
-
 connection.execute("PRAGMA foreign_keys = ON;")
 
 connection.execute("""
     CREATE TABLE IF NOT EXISTS user(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        login varchar(25) UNIQUE NOT NULL
+        login varchar(25) UNIQUE NOT NULL,
+        count_of_messages INTEGER DEFAULT 0
     )
 """)
-
 
 connection.execute("""
     CREATE TABLE IF NOT EXISTS chat(
@@ -26,7 +25,6 @@ connection.execute("""
         CONSTRAINT length_checker CHECK ( length(message) > 5 )
     )
 """)
-
 
 connection.execute("""
     CREATE TABLE IF NOT EXISTS chat_to_user_like(
@@ -76,4 +74,24 @@ connection.execute("""
     JOIN user
     ON user.id=chat.user_id
     ORDER BY chat.publish_date desc
+""")
+
+connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS increase_count_of_messages
+    AFTER INSERT ON chat
+    BEGIN
+        UPDATE user
+        SET count_of_messages=user.count_of_messages + 1
+        WHERE user.id=NEW.user_id;
+    END;
+""")
+
+connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS decrease_count_of_messages
+    AFTER DELETE ON chat
+    BEGIN
+        UPDATE user
+        SET count_of_messages=user.count_of_messages - 1
+        WHERE user.id=OLD.user_id;
+    END;
 """)
