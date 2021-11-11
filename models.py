@@ -19,6 +19,7 @@ connection.execute("""
         publish_date date NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now')),
         user_id INTEGER NOT NULL,
         count_of_likes INTEGER DEFAULT 0,
+        rate FLOAT,
         
         FOREIGN KEY(user_id) REFERENCES user(id),
         CONSTRAINT fuck_checker CHECK ( message not like '%fuck%'),
@@ -31,9 +32,31 @@ connection.execute("""
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         chat_id INTEGER NOT NULL,
+        rate INTEGER NOT NULL,
         
-        CONSTRAINT user_chat_unique UNIQUE (user_id, chat_id)
+        CONSTRAINT user_chat_unique UNIQUE (user_id, chat_id),
+        CONSTRAINT check_range_of_rate CHECK (rate IN (1, 2, 3, 4, 5))
     )
+""")
+
+connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS compute_avg_rate_after_insert
+    AFTER INSERT ON chat_to_user_like
+    BEGIN 
+        UPDATE chat
+        SET rate=(SELECT AVG(rate) FROM chat_to_user_like WHERE chat.id=NEW.chat_id GROUP BY chat_id)
+        WHERE chat.id=NEW.chat_id;
+    END;
+""")
+
+connection.execute("""
+    CREATE TRIGGER IF NOT EXISTS compute_avg_rate_after_update
+    AFTER UPDATE ON chat_to_user_like
+    BEGIN 
+        UPDATE chat
+        SET rate=(SELECT AVG(rate) FROM chat_to_user_like WHERE chat.id=NEW.chat_id GROUP BY chat_id)
+        WHERE chat.id=NEW.chat_id;
+    END;
 """)
 
 connection.execute("""

@@ -98,3 +98,21 @@ def add_likes(request_method, http_cookie, body, http_host, url_scheme, query_st
         """, (user_id, message_id))
     connection.commit()
     return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""
+
+def add_rate(request_method, http_cookie, body, http_host, url_scheme, query_string, message_id=None, rate=None):
+    cookie = parse_cookies(http_cookie)
+    user_id = int(cookie.get("user_id", "0"))
+    try:
+        connection.execute("""
+            INSERT INTO chat_to_user_like
+            (user_id, chat_id, rate)
+            VALUES (?, ?, ?)
+        """, (user_id, message_id, rate))
+    except:
+        connection.execute("""
+            UPDATE chat_to_user_like
+            SET rate=?
+            WHERE user_id=? AND chat_id=?
+        """, (rate, user_id, message_id))
+    connection.commit()
+    return "307 Temporary Redirect", [("Location", f"{url_scheme}://{http_host}/chat")], b""

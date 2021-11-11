@@ -7,7 +7,12 @@ My favorite Chat
         <h3>text: {{ message[2] }}</h3>
         <a href="/delete_message/{{ message[3] }}">delete id in url</a><br>
         <a href="/delete_message?message_id={{message[3]}}">delete id in query parameters</a><br>
-        <a href="/add_like/{{ message[3] }}">Likes: {{ message[4] }}</a>
+        <!--<a href="/add_like/{{ message[3] }}">Likes: {{ message[4] }}</a>-->
+        <a href="/add_rate/{{ message[3] }}/1">rate 1</a>
+        <a href="/add_rate/{{ message[3] }}/2">rate 2</a>
+        <a href="/add_rate/{{ message[3] }}/3">rate 3</a>
+        <a href="/add_rate/{{ message[3] }}/4">rate 4</a>
+        <a href="/add_rate/{{ message[3] }}/5">rate 5</a>
         <hr>
         <br>
     {% endfor %}
